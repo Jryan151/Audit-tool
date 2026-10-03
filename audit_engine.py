@@ -1,6 +1,6 @@
 import json
 import re
-from bs4Soup import BeautifulSoup
+from bs4 import BeautifulSoup
 import requests
 
 
@@ -53,20 +53,35 @@ if __name__ == "__main__":
   with open("payload.json", "r") as f:
     data = json.load(f)
 
-  # Navigate Tally's nested fields array to grab the values
+  # Navigate Tally's nested fields array
   fields = data.get("data", {}).get("fields", [])
   target_url = None
   biz_name = None
 
+  # Diagnostic print to inspect labels from your payload
+  print("--- INSPECTING PAYLOAD FIELDS ---")
   for field in fields:
-    label = field.get("label", "").lower()
-    if "website" in label or "url" in label:
-      target_url = field.get("value")
-    elif "business" in label:
-      biz_name = field.get("value")
+    label = field.get("label", "")
+    value = field.get("value", "")
+    print(f"Label: '{label}' | Value: '{value}'")
+
+    # Flexible matching for URL and business name
+    lower_label = label.lower()
+    if (
+        "website" in lower_label
+        or "url" in lower_label
+        or "link" in lower_label
+    ):
+      target_url = value
+    elif "business" in lower_label or "name" in lower_label:
+      biz_name = value
+  print("-----------------------------------")
 
   # Run the audit function with the extracted values
   if target_url and biz_name:
     audit_local_business(target_url, biz_name)
   else:
-    print("[!] Could not find website URL or business name in payload.json")
+    print(
+        f"[!] Could not match URL or Business Name. Found URL: {target_url},"
+        f" Business: {biz_name}"
+    )
